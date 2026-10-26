@@ -1,0 +1,9 @@
+// Original DBAL starter percussion, CC0. GM note numbers.
+<region> sample=Kick.wav key=36 loop_mode=one_shot ampeg_release=0.08
+<region> sample=Snare.wav key=38 loop_mode=one_shot ampeg_release=0.08
+<region> sample=ClosedHat.wav key=42 loop_mode=one_shot ampeg_release=0.08
+<region> sample=OpenHat.wav key=46 loop_mode=one_shot ampeg_release=0.08
+<region> sample=LowTom.wav key=41 loop_mode=one_shot ampeg_release=0.08
+<region> sample=HighTom.wav key=45 loop_mode=one_shot ampeg_release=0.08
+<region> sample=Crash.wav key=49 loop_mode=one_shot ampeg_release=0.08
+<region> sample=Ride.wav key=51 loop_mode=one_shot ampeg_release=0.08

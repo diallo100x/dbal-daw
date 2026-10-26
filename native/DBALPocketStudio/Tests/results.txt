@@ -1,0 +1,4 @@
+Generated Legacy and Pro targets with Mac Catalyst support.
+PASS: OpenStep parsing, deterministic project, 2 shared schemes, 9 source files per target, iPadOS 15.4/Catalyst settings, microphone/background/project metadata, 8 valid kit samples.
+PASS: sampler silence, release, key/velocity ranges, pan, loops, one-shot/panic, queue overflow, concurrent MIDI, recording backpressure, host transport.
+Swift compiler unavailable: clip-edit Swift tests NOT RUN.
