@@ -57,8 +57,6 @@ import UniformTypeIdentifiers
                 Text("DBAL DAW • Native Mac").font(.headline)
                 Button("Open…"){openProject()};Button("Save"){s.save(capture:true)}.keyboardShortcut("s")
                 Menu("Export"){Button("Portable Project"){s.exportProject()};Button("Stereo WAV"){Task{await s.exportMix()}}}
-                Button(midi.enabled ? "MIDI Input On / Refresh":"Enable MIDI Input"){midi.start()}
-                if midi.enabled{Button("MIDI Off"){midi.close()};Toggle("CC16 → tracks 1/2",isOn:$remoteCrossfader).toggleStyle(.checkbox).font(.caption)}
                 Button("Audio & MIDI Settings…"){s.showAudioMIDISettings=true}
                 Spacer();Button("Restart Audio"){Task{await s.rebuild()}}.disabled(s.busy || s.recording)
             }
@@ -77,9 +75,13 @@ import UniformTypeIdentifiers
                 },graph:true)}),in:30...300).frame(width:150).disabled(s.recording || s.playing)
                 Toggle("Snap",isOn:$s.snap).toggleStyle(.checkbox)
                 Picker("Grid",selection:$s.grid){Text("1/4").tag(1.0);Text("1/8").tag(0.5);Text("1/16").tag(0.25);Text("1/32").tag(0.125)}.frame(width:115)
+            }.disabled(s.busy)
+            HStack{
                 Button("Undo"){s.undo()}.disabled(!s.canUndo);Button("Redo"){s.redo()}.disabled(!s.canRedo)
                 Toggle("Loop",isOn:Binding(get:{s.session.loop},set:{value in s.change{$0.loop=value}})).toggleStyle(.checkbox)
                 Toggle("Click",isOn:$s.metronome).toggleStyle(.checkbox)
+                Button(midi.enabled ? "MIDI Input On / Refresh":"Enable MIDI Input"){midi.start()}
+                if midi.enabled{Button("MIDI Off"){midi.close()};Toggle("CC16 → tracks 1/2",isOn:$remoteCrossfader).toggleStyle(.checkbox).font(.caption)}
             }.disabled(s.busy)
         }
     }
