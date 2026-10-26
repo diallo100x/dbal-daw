@@ -40,3 +40,9 @@ DBAL DAW repository; the existing web prototype is unchanged.
 Hardware microphone routing, Bluetooth/network peers and an actual AUv3 session
 still need acceptance on the owner's Mac. Consult the current CI result for Apple
 compilation and offline/edit logic checks; compilation is not a hardware pass.
+
+Integration fixes: Apple clip hit-testing now imports CoreGraphics explicitly,
+and build/test scripts retain executable permissions. CI covers the native Mac
+Release app, PocketLegacy simulator app, sanitizer DSP checks, note editing,
+non-destructive clip edits, offline audio transforms and graph-error guards.
+It does not pair physical MIDI devices or confirm microphone feedback/latency.

@@ -2,7 +2,7 @@
 
 A separate native DAW project for Diallo Beats, prioritizing an iPad limited to iPadOS 15.4.1. No changes to DBAL Web DAW or the DJ DAW. No account, API, network service, package manager, or AudioKit dependency is required.
 
-**This is an initial source prototype, not a verified device build.** The portable C sampler and project structure were tested in Linux. Swift compilation, signing, audio routing, AUv3 hosting, background recording, UI layout, and session interchange require Xcode/device validation. There is no precompiled IPA in this ZIP.
+**This is an initial source prototype, not a verified device build.** The portable C sampler and project structure were tested in Linux. Native Mac and Legacy simulator compilation, edit logic and offline audio checks run in CI. Signing, hardware audio routing, AUv3 sessions, Bluetooth/network MIDI, background recording and gesture layout still require device validation. There is no precompiled IPA in this ZIP.
 
 See **UPDATE-0.1.5.md** for Mac track/lane selection, piano-roll and waveform editors, input monitoring, Bluetooth and network MIDI settings. See **UPDATE-0.1.4.md** for the reported Mac connection-crash protection and rebuild instructions. See **UPDATE-0.1.3.md** for the native macOS target, AU v2/AUv3 hosting, sampler time stretching/pitch, six banks of eight slices, Pocket MIDI Remote mode and build/test commands. Prior Pocket features remain included.
 
@@ -16,7 +16,7 @@ Open DBALPocketStudio.xcodeproj, choose **DBALNativeMac → My Mac**, select you
 2. Select the **PocketLegacy** scheme and your older physical iPad. Deployment target is **15.4** (includes 15.4.1).
 3. Under the PocketLegacy target → Signing & Capabilities, choose your development team. Change the bundle identifier if your account requires it. Automatic signing is enabled; no AUv3 extension target or extra extension App ID is needed because this app is a host.
 4. Press Run. Accept microphone permission when recording your first vocal take.
-5. Use **PocketPro** for the newer iPad. To build the closely matched Mac version, select **My Mac (Mac Catalyst)** under either scheme. The Mac deployment baseline is macOS 12.3; the separate DBALNativeMac target now provides the native desktop shell and AU v2 discovery path. Neither Mac target has been Apple-built here.
+5. Use **PocketPro** for the newer iPad. To build the closely matched Mac version, select **My Mac (Mac Catalyst)** under either scheme. The Mac deployment baseline is macOS 12.3; the separate DBALNativeMac target now provides the native desktop shell and AU v2 discovery path. The separate DBALNativeMac target is Apple-built in CI; Catalyst is not covered by that build.
 
 Command-line alternatives, with full Xcode installed/selected:
 

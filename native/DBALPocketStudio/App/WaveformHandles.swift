@@ -67,6 +67,7 @@ struct FadeDrawing:View {
             for x in [0.0,Double(size.width)-7] {
                 context.fill(Path(CGRect(x:x,y:22,width:7,height:max(1,size.height-28))),with:.color(.cyan.opacity(0.8)))
                 context.fill(Path(CGRect(x:x,y:0,width:9,height:12)),with:.color(.orange))
+                context.fill(Path(CGRect(x:x,y:max(0,Double(size.height)-12),width:9,height:12)),with:.color(.orange))
             }
         }.allowsHitTesting(false)
     }
