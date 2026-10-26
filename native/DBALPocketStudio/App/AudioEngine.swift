@@ -85,6 +85,8 @@ final class PocketAudio {
     var selectedInput: String?
     var bufferFrames = Flavor.defaultBuffer
     var monitorEnabled = false
+    var monitorTrack:UUID?
+    var monitorGain:Float=0.6
     var inputLevel: Float = 0
     var onInputLevel: ((Float)->Void)?
     private var interruptionObserver: NSObjectProtocol?
@@ -199,8 +201,8 @@ final class PocketAudio {
             if format.channelCount > 0 && format.sampleRate > 0 {
                 engine.attach(monitor); monitorAttached = true
                 try connect(engine.inputNode, to: monitor, format: format)
-                try connect(monitor, to: engine.mainMixerNode, format: nil)
-                monitor.outputVolume = 0.6
+                try connect(monitor, to: monitorTrack.flatMap{runtimes[$0]?.mixer} ?? engine.mainMixerNode, format: nil)
+                monitor.outputVolume = monitorGain
             }
         }
         updateMixer(session)

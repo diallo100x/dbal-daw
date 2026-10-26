@@ -1,8 +1,14 @@
 import Foundation
 import Combine
 import CoreMIDI
+import CoreAudioKit
+
+struct MacMIDISource:Identifiable {let id:MIDIEndpointRef;let name:String}
 
 @MainActor final class MacMIDIReceiver:ObservableObject {
+    @Published var sources:[MacMIDISource]=[]
+    private var connected=Set<MIDIEndpointRef>()
+    private var bluetooth:CABTLEMIDIWindowController?
     @Published var enabled=false
     @Published var status="MIDI remote input off"
     var receive:((MIDIMessage)->Void)?
@@ -13,7 +19,7 @@ import CoreMIDI
     private var generation=0
     func start(){
         close()
-        var result=MIDIClientCreate("DBAL Native Input" as CFString,nil,nil,&client)
+        var result=MIDIClientCreateWithBlock("DBAL Native Input" as CFString,&client){[weak self] _ in Task{@MainActor in self?.refreshSources()}}
         if result==noErr {
             let token=generation
             result=MIDIInputPortCreateWithBlock(client,"Remote Input" as CFString,&port){[weak self] list,connection in
@@ -36,10 +42,26 @@ import CoreMIDI
             }
         }
         guard result==noErr else{status="MIDI input failed: \(result)";return}
-        var connected=0
-        for index in 0..<MIDIGetNumberOfSources(){let source=MIDIGetSource(index);if MIDIPortConnectSource(port,source,UnsafeMutableRawPointer(bitPattern:UInt(source)))==noErr{connected+=1}}
-        enabled=true;status="Listening to \(connected) MIDI sources. Refresh after connecting a device."
+        enabled=true;refreshSources()
     }
-    func close(){generation+=1;release?();enabled=false;if client != 0{MIDIClientDispose(client);client=0;port=0};decoders=[:]}
+    func showBluetooth(){
+        if bluetooth==nil{bluetooth=CABTLEMIDIWindowController()}
+        bluetooth?.showWindow(nil)
+    }
+    func refreshSources(){
+        guard port != 0,enabled else{return}
+        let current=Set((0..<MIDIGetNumberOfSources()).map{MIDIGetSource($0)})
+        let removed=connected.subtracting(current)
+        if !removed.isEmpty{release?()}
+        for source in removed{MIDIPortDisconnectSource(port,source);connected.remove(source);decoders.removeValue(forKey:source)}
+        for source in current.subtracting(connected){if MIDIPortConnectSource(port,source,UnsafeMutableRawPointer(bitPattern:UInt(source)))==noErr{connected.insert(source)}}
+        sources=connected.sorted().map{source in
+            var name:Unmanaged<CFString>?
+            MIDIObjectGetStringProperty(source,kMIDIPropertyDisplayName,&name)
+            return MacMIDISource(id:source,name:name?.takeRetainedValue() as String? ?? "MIDI source")
+        }
+        status="Listening to \(sources.count) MIDI sources. New connections attach automatically."
+    }
+    func close(){generation+=1;release?();enabled=false;if client != 0{MIDIClientDispose(client);client=0;port=0};decoders=[:];connected=[];sources=[];status="MIDI input off"}
     deinit{if client != 0{MIDIClientDispose(client)}}
 }

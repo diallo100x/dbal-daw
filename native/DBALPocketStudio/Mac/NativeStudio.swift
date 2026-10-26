@@ -8,7 +8,9 @@ import UniformTypeIdentifiers
     @StateObject private var studio=Studio()
     var body:some Scene {
         WindowGroup {NativeStudioView().environmentObject(studio).preferredColorScheme(.dark)}
-            .commands{CommandGroup(replacing:.newItem){Button("New Session"){Task{await studio.newSession()}}.keyboardShortcut("n")}}
+            .commands{CommandGroup(replacing:.newItem){Button("New Session"){Task{await studio.newSession()}}.keyboardShortcut("n")}
+                CommandGroup(replacing:.appSettings){Button("Audio & MIDI Settings…"){studio.showAudioMIDISettings=true}.keyboardShortcut(",")}
+            }
     }
 }
 @MainActor struct NativeStudioView:View {
@@ -16,6 +18,8 @@ import UniformTypeIdentifiers
     @State private var performance=false
     @State private var plugins=false
     @State private var effect=false
+    @State private var editingMIDI:UUID?
+    @State private var editingAudio:UUID?
     @State private var zoom=28.0
     @State private var remoteCrossfader=false
     @StateObject private var waves=Waveforms()
@@ -34,6 +38,9 @@ import UniformTypeIdentifiers
             Divider()
             HStack{Text(s.status+" • "+midi.status).font(.caption);Spacer();Text("a product of Diallo Beats Audio Lab").font(.caption2)}.padding(8)
         }.frame(minWidth:1000,minHeight:620)
+        .sheet(isPresented:$s.showAudioMIDISettings){MacAudioMIDISettings(midi:midi).environmentObject(s)}
+        .sheet(isPresented:Binding(get:{editingMIDI != nil},set:{if !$0{editingMIDI=nil}})){if let id=editingMIDI{MacNoteEditor(trackID:id).environmentObject(s)}}
+        .sheet(isPresented:Binding(get:{editingAudio != nil},set:{if !$0{editingAudio=nil}})){if let id=editingAudio{MacAudioEditor(clipID:id,waves:waves).environmentObject(s)}}
         .sheet(isPresented:$performance){PerformancePanel().environmentObject(s).frame(minWidth:800,minHeight:650)}
         .sheet(isPresented:$plugins){MacPluginPicker(effect:effect){ref in plugins=false;s.choosePlugin(ref,effect:effect)}}
         .sheet(isPresented:Binding(get:{s.pluginController != nil},set:{if !$0{s.pluginController=nil}})){
@@ -52,6 +59,7 @@ import UniformTypeIdentifiers
                 Menu("Export"){Button("Portable Project"){s.exportProject()};Button("Stereo WAV"){Task{await s.exportMix()}}}
                 Button(midi.enabled ? "MIDI Input On / Refresh":"Enable MIDI Input"){midi.start()}
                 if midi.enabled{Button("MIDI Off"){midi.close()};Toggle("CC16 → tracks 1/2",isOn:$remoteCrossfader).toggleStyle(.checkbox).font(.caption)}
+                Button("Audio & MIDI Settings…"){s.showAudioMIDISettings=true}
                 Spacer();Button("Restart Audio"){Task{await s.rebuild()}}.disabled(s.busy || s.recording)
             }
             HStack{
@@ -78,16 +86,22 @@ import UniformTypeIdentifiers
     private var trackList:some View {
         VStack {
             HStack{Button("+ Audio"){s.addTrack(audio:true)};Button("+ MIDI"){s.addTrack(audio:false)}}.padding(8)
-            List(s.session.tracks){track in
+            List(s.session.tracks,selection:Binding(get:{s.selected},set:{id in if let id=id{s.selectTrack(id)}})){track in
                 VStack(alignment:.leading){
-                    Button(track.name){s.selected=track.id}.buttonStyle(.plain).foregroundColor(s.selected==track.id ? .cyan:.primary)
+                    Button(track.name){s.selectTrack(track.id)}.buttonStyle(.plain).foregroundColor(s.selected==track.id ? .cyan:.primary)
                     HStack{
                         Button(s.armed==track.id ? "ARMED":"Arm"){s.armed=s.armed==track.id ? nil:track.id}.disabled(s.recording)
                         Button(track.mute ? "Unmute":"Mute"){editTrack(track.id){$0.mute.toggle()}}
                         Button(track.solo ? "Unsolo":"Solo"){editTrack(track.id){$0.solo.toggle()}}
                     }.font(.caption)
+                    if track.isAudio {
+                        Button(s.monitoredTrack==track.id ? "● Input Monitor On":"Input Monitor"){Task{await s.setInputMonitoring(s.monitoredTrack==track.id ? nil:track.id)}}.disabled(s.busy || s.recording)
+                    }
                     Slider(value:Binding(get:{Double(s.session.tracks.first{$0.id==track.id}?.volume ?? 0.8)},set:{v in if let i=s.session.tracks.firstIndex(where:{$0.id==track.id}){s.session.tracks[i].volume=Float(v);s.audio.updateMixer(s.session)}}),in:0...1.5,onEditingChanged:{if !$0{s.save()}})
-                }.padding(.vertical,5)
+                }.padding(.vertical,5).frame(maxWidth:.infinity,alignment:.leading)
+                    .contentShape(Rectangle()).simultaneousGesture(TapGesture().onEnded{s.selectTrack(track.id)})
+                    .listRowBackground(s.selected==track.id ? Color.cyan.opacity(0.22):Color.clear)
+                    .tag(track.id)
             }
         }
     }
@@ -98,14 +112,15 @@ import UniformTypeIdentifiers
                     .frame(height:25).contentShape(Rectangle()).gesture(DragGesture(minimumDistance:0).onEnded{v in if !s.playing{s.beat=s.quantize(v.location.x/zoom)}})
                 ForEach(s.session.tracks){track in
                     ZStack(alignment:.topLeading){
-                        Rectangle().fill(s.selected==track.id ? Color.gray.opacity(0.2):Color.black.opacity(0.2))
+                        Rectangle().fill(s.selected==track.id ? Color.cyan.opacity(0.16):Color.black.opacity(0.2))
+                            .contentShape(Rectangle()).onTapGesture{s.selectTrack(track.id);if !track.isAudio{editingMIDI=track.id}}
                         ForEach(track.clips){clip in
-                            ClipTile(clip:clip,trackID:track.id,zoom:zoom,waveform:waves.data[clip.asset])
+                            ClipTile(clip:clip,trackID:track.id,zoom:zoom,waveform:waves.data[clip.asset],onEdit:{editingAudio=clip.id})
                                 .offset(x:clip.start*zoom,y:4)
                                 .task(id:clip.asset){await waves.load(clip.asset,root:s.root)}
                                 .contextMenu{Button("Split at Cursor"){s.selectClips([clip.id]);s.splitClip()};Button("Duplicate"){s.selectClips([clip.id]);s.duplicateClip()};Button("Delete"){s.selectClips([clip.id]);s.deleteClip()}}
                         }
-                        ForEach(track.notes){note in Rectangle().fill(Color.orange).frame(width:max(3,note.duration*zoom),height:5).offset(x:note.beat*zoom,y:CGFloat(10+(127-note.note)%60))}
+                        ForEach(track.notes){note in Rectangle().fill(Color.orange).frame(width:max(3,note.duration*zoom),height:5).offset(x:note.beat*zoom,y:CGFloat(10+(127-note.note)%60)).onTapGesture{s.selectTrack(track.id);editingMIDI=track.id}}
                     }.frame(width:timelineWidth,height:82).clipped()
                 }
             }.overlay(alignment:.topLeading){Rectangle().fill(Color.red).frame(width:1).offset(x:s.beat*zoom).allowsHitTesting(false)}
@@ -122,7 +137,11 @@ import UniformTypeIdentifiers
                 Slider(value:$zoom,in:8...80).frame(width:120)
             }
             if let i=s.selectedIndex {
+                Text("Selected: \(s.session.tracks[i].name) · \(s.session.tracks[i].isAudio ? "Audio":"MIDI / Instrument")").font(.headline)
                 HStack{
+                    if s.session.tracks[i].isAudio {
+                        Button(s.monitoredTrack==s.selected ? "Input Monitor On":"Input Monitor Off"){Task{await s.setInputMonitoring(s.monitoredTrack==s.selected ? nil:s.selected)}}
+                    }else{Button("Edit MIDI Notes"){editingMIDI=s.selected}}
                     Menu("Instrument: \(s.session.tracks[i].instrument.rawValue)"){
                         ForEach([InstrumentKind.tone,.drums,.sample,.padSampler],id:\.self){kind in Button(kind.rawValue){s.change({$0.tracks[i].instrument=kind;$0.tracks[i].plugin=nil},graph:true)}}
                         Button("Import SF2…"){importInstrument(folder:false)};Button("Import SFZ Folder…"){importInstrument(folder:true)}
@@ -132,9 +151,9 @@ import UniformTypeIdentifiers
                 }
             }
             if let clip=s.session.tracks.flatMap({$0.clips}).first(where:{$0.id==s.selectedClip}){
-                HStack{Text(clip.name);Button("Split"){s.splitClip()};Button("Duplicate"){s.duplicateClip()};Button("Fade Curve"){s.cycleFadeCurve(clip.id)};Button("Delete"){s.deleteClip()}}
+                HStack{Text(clip.name);Button("Edit Waveform"){editingAudio=clip.id};Button("Split"){s.splitClip()};Button("Duplicate"){s.duplicateClip()};Button("Fade Curve"){s.cycleFadeCurve(clip.id)};Button("Delete"){s.deleteClip()}}
             }
-            Text("Select a clip to trim its sides or drag upper corners for fades. Shift-click fades to change curve. Right-click for edits.").font(.caption).foregroundColor(.secondary)
+            Text("Click a track to select it. Click an audio clip or MIDI lane to edit. Audio edges trim; corners fade. Shift-click a fade to change its curve.").font(.caption).foregroundColor(.secondary)
         }.disabled(s.busy || s.recording)
     }
     private func receiveMIDI(_ message:MIDIMessage){

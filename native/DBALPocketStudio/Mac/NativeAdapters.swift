@@ -42,7 +42,7 @@ import UniformTypeIdentifiers
         origin=convert(event.locationInWindow,from:nil)
         if event.modifierFlags.contains(.shift){curve?();return}
         let left=origin.x<bounds.width/2
-        mode=origin.y<20 ? (left ? .fadeIn:.fadeOut):(left ? .trimLeft:.trimRight)
+        mode=(origin.y<20 || origin.y>bounds.height-20) ? (left ? .fadeIn:.fadeOut):(left ? .trimLeft:.trimRight)
     }
     override func mouseDragged(with event:NSEvent){if let mode=mode{edit?(mode,convert(event.locationInWindow,from:nil).x-origin.x,false,false)}}
     override func mouseUp(with event:NSEvent){if let mode=mode{edit?(mode,convert(event.locationInWindow,from:nil).x-origin.x,true,false)};mode=nil}

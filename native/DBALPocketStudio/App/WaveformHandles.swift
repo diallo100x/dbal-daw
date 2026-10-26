@@ -35,7 +35,7 @@ enum WaveHandle:Equatable {case trimLeft,trimRight,fadeIn,fadeOut}
         let t=g.translation(in:self),p=g.location(in:self)
         if g.state == .began {
             let origin=CGPoint(x:p.x-t.x,y:p.y-t.y),left=origin.x<bounds.width/2
-            mode=origin.y<20 ? (left ? .fadeIn:.fadeOut):(left ? .trimLeft:.trimRight)
+            mode=(origin.y<20 || origin.y>bounds.height-20) ? (left ? .fadeIn:.fadeOut):(left ? .trimLeft:.trimRight)
         }
         guard let mode=mode else{return}
         if g.state == .changed || g.state == .began {edit?(mode,Double(t.x),false,false)}

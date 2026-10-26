@@ -6,6 +6,8 @@ import SwiftUI
     let trackID:UUID
     let zoom:Double
     let waveform:WaveformData?
+    var height:CGFloat=72
+    var onEdit:(()->Void)?=nil
     @State private var draft:AudioClip?
     private var shown:AudioClip {draft ?? clip}
     var body: some View {
@@ -22,7 +24,7 @@ import SwiftUI
                 }
                 context.stroke(path,with:.color(.white.opacity(0.8)),lineWidth:1)
             }
-        }.padding(4).frame(width:max(28,shown.length*zoom),height:72).background(s.selectedClips.contains(clip.id) ? Color.teal : Color.blue.opacity(0.6)).cornerRadius(5)
+        }.padding(4).frame(width:max(28,shown.length*zoom),height:height).background(s.selectedClips.contains(clip.id) ? Color.teal : Color.blue.opacity(0.6)).cornerRadius(5)
             .overlay {
                 if s.selectedClips.contains(clip.id) {
                     FadeDrawing(fadeIn:shown.fadeIn,fadeOut:shown.fadeOut,duration:shown.length*60/s.session.tempo,curve:shown.fadeCurve ?? .linear)
@@ -41,7 +43,7 @@ import SwiftUI
                 guard !s.selectionMode,!s.recording,!s.busy else{s.clipMovePreview=0;return}
                 s.moveSelection(delta:s.clipMovePreview)
             })
-            .onTapGesture {s.selectClips([clip.id],primary:clip.id)}
+            .onTapGesture {s.selectClips([clip.id],primary:clip.id);onEdit?()}
     }
     private func handle(_ mode:WaveHandle,_ pixels:Double,_ finished:Bool,_ cancelled:Bool) {
         guard !s.recording,!s.busy else{return}

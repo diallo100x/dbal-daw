@@ -12,7 +12,16 @@ import UniformTypeIdentifiers
 
 @MainActor final class Studio: ObservableObject {
     @Published var session = PocketSession()
-    @Published var selected: UUID?
+    @Published var selected: UUID? {
+        didSet {
+            guard selected != oldValue else{return}
+            for key in Array(held.keys){noteOff(key)}
+            cancelRepeater();pluginController=nil
+        }
+    }
+    @Published var showAudioMIDISettings=false
+    @Published var monitoredTrack:UUID?
+    @Published var monitorGain:Float=0.6
     @Published var selectedClip: UUID?
     @Published var selectedClips = Set<UUID>()
     @Published var selectionMode = true
@@ -115,8 +124,31 @@ import UniformTypeIdentifiers
             UserDefaults.standard.set(root.path, forKey: "lastSession")
         } catch { fail(error) }
     }
+    func selectTrack(_ id:UUID) {
+        guard session.tracks.contains(where:{$0.id==id}) else{return}
+        selected=id;clearClipSelection()
+    }
+    func setInputMonitoring(_ id:UUID?) async {
+        guard !busy,!recording else{return}
+        if let id=id {
+            guard session.tracks.contains(where:{$0.id==id && $0.isAudio}) else{return}
+            if !microphoneGranted {guard await requestMicrophone() else{return}}
+        }
+        stop();monitoredTrack=id;audio.monitorTrack=id;audio.monitorEnabled=id != nil
+        audio.monitorGain=monitorGain
+        await rebuild()
+    }
+    func setMonitorGain(_ gain:Float){monitorGain=min(1,max(0,gain));audio.monitorGain=monitorGain;audio.monitor.outputVolume=monitorGain}
+    func editMIDINote(track:UUID,note:UUID,edit:(inout MIDIEvent)->Void) {
+        guard let ti=session.tracks.firstIndex(where:{$0.id==track && !$0.isAudio}),let ni=session.tracks[ti].notes.firstIndex(where:{$0.id==note}) else{return}
+        var value=session.tracks[ti].notes[ni];edit(&value)
+        guard value.beat.isFinite,value.duration.isFinite else{return}
+        value.beat=max(0,value.beat);value.duration=max(0.03125,value.duration);value.note=min(127,max(0,value.note));value.velocity=min(127,max(1,value.velocity))
+        change{$0.tracks[ti].notes[ni]=value}
+    }
     func rebuild() async {
         guard !busy else { return }; busy = true; defer { busy = false }
+        if let id=monitoredTrack,!session.tracks.contains(where:{$0.id==id && $0.isAudio}) {monitoredTrack=nil;audio.monitorTrack=nil;audio.monitorEnabled=false}
         do {
             try await audio.rebuild(session, root: root, microphoneGranted: microphoneGranted)
             audio.setTransport(session, beat: beat, playing: playing, recording: recording)

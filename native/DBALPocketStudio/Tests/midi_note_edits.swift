@@ -1,0 +1,12 @@
+import Foundation
+let note=MIDIEvent(beat:2,duration:1,note:60,velocity:85)
+let moved=MIDINoteEdits.moved(note,beats:0.37,pitches:7,grid:0.25)
+precondition(moved.beat==2.25 && moved.note==67 && moved.duration==1 && moved.velocity==85 && moved.id==note.id)
+precondition(note.beat==2 && note.note==60)
+precondition(MIDINoteEdits.moved(note,beats:-8,pitches:-100,grid:0.25).beat==0)
+precondition(MIDINoteEdits.moved(note,beats:0,pitches:1000,grid:nil).note==127)
+precondition(MIDINoteEdits.resized(note,beats:-5,grid:0.25).duration==0.25)
+precondition(abs(MIDINoteEdits.moved(note,beats:0.37,pitches:0,grid:nil).beat-2.37)<1e-9)
+precondition(MIDINoteEdits.snapped(.nan,grid:0.25)==0)
+precondition(MIDINoteEdits.resized(note,beats:-5,grid:.nan).duration==0.03125)
+print("PASS: note movement, pitch bounds, snap/off, resize minimum, identity and velocity preservation.")

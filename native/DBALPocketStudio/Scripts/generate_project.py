@@ -19,7 +19,7 @@ for name,kind in files:
     fileids[name]=add('file:'+name,f'{{isa=PBXFileReference;lastKnownFileType={quoted(kind)};path={quoted(name)};sourceTree="<group>";}}')
 kit=add('kit','{isa=PBXFileReference;lastKnownFileType=folder;path="Resources/StarterKit";sourceTree="<group>";}')
 products=[];targets=[]; target_ids={}
-shared_mac={'AudioEngine.swift','Session.swift','PerformanceModel.swift','SFZ.swift','XYAudioUnit.swift','SampleTransform.swift','Studio.swift','StudioPerformance.swift','ClipEdits.swift','ClipTile.swift','MusicalControls.swift','SamplerControls.swift','PerformancePanel.swift','WaveformHandles.swift','Waveforms.swift','MIDIMessage.swift'}
+shared_mac={'AudioEngine.swift','Session.swift','PerformanceModel.swift','SFZ.swift','XYAudioUnit.swift','SampleTransform.swift','Studio.swift','StudioPerformance.swift','ClipEdits.swift','ClipTile.swift','MusicalControls.swift','SamplerControls.swift','PerformancePanel.swift','WaveformHandles.swift','Waveforms.swift','MIDIMessage.swift','MIDINoteEdits.swift'}
 for flavor in ['Legacy','Pro','Mac']:
     native=flavor=='Mac'
     name='DBALNativeMac' if native else 'Pocket'+flavor
@@ -46,7 +46,7 @@ for flavor in ['Legacy','Pro','Mac']:
             'ENABLE_HARDENED_RUNTIME':'YES','SWIFT_OPTIMIZATION_LEVEL':'-Onone' if config=='Debug' else '-O',
             'GCC_OPTIMIZATION_LEVEL':'0' if config=='Debug' else 's','GCC_C_LANGUAGE_STANDARD':'c11',
             'SWIFT_ACTIVE_COMPILATION_CONDITIONS':'$(inherited) '+('DEBUG ' if config=='Debug' else '')+('POCKET_PRO' if flavor=='Pro' else 'POCKET_LEGACY'),
-            'MARKETING_VERSION':'0.1.4','CURRENT_PROJECT_VERSION':'5','LD_RUNPATH_SEARCH_PATHS':'$(inherited) @executable_path/Frameworks',
+            'MARKETING_VERSION':'0.1.5','CURRENT_PROJECT_VERSION':'6','LD_RUNPATH_SEARCH_PATHS':'$(inherited) @executable_path/Frameworks',
             'ENABLE_USER_SCRIPT_SANDBOXING':'YES','SWIFT_EMIT_LOC_STRINGS':'NO',
         }
         if native:
