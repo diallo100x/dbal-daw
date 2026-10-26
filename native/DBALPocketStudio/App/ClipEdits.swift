@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(CoreGraphics)
+import CoreGraphics
+#endif
 
 struct ClipPlacement {
     var trackID: UUID
@@ -12,11 +15,14 @@ enum ClipEdits {
         }
     }
     static func hitBoxes(in session: PocketSession, zoom: Double) -> [(UUID, CGRect)] {
-        session.tracks.enumerated().flatMap { row, track in
-            track.isAudio ? track.clips.map {
-                ($0.id, CGRect(x: $0.start*zoom, y: Double(row)*85+5, width: max(28,$0.length*zoom), height: 72))
-            } : []
+        var boxes:[(UUID,CGRect)]=[]
+        for (row,track) in session.tracks.enumerated() where track.isAudio {
+            for clip in track.clips {
+                let rect=CGRect(x:clip.start*zoom,y:Double(row)*85+5,width:max(28,clip.length*zoom),height:72)
+                boxes.append((clip.id,rect))
+            }
         }
+        return boxes
     }
     static func hits(in session: PocketSession, from start: CGPoint, to end: CGPoint, zoom: Double) -> Set<UUID> {
         let rect = CGRect(x: min(start.x,end.x), y: min(start.y,end.y), width: max(1,abs(end.x-start.x)), height: max(1,abs(end.y-start.y)))
