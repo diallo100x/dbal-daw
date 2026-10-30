@@ -108,7 +108,7 @@ import CoreGraphics
         assert(PerformanceLayout.firstWhite(1000,width:46,viewport:644)==61)
         assert(PerformanceLayout.firstWhite(100,width:46,viewport:10000)==0)
         assert(PerformanceLayout.height(900,maximum:460)==460)
-        assert(PerformanceLayout.height(-100,maximum:460)==220)
+        assert(PerformanceLayout.height(-100,maximum:460)==260)
         print("PASS: XY timing/pitch/velocity mappings, velocity scaling, keyboard MIDI range, key size/pan and dock height bounds.")
         print("PASS: marquee/group edits, nondestructive trim/restore, source limits, fade curves, XY divisions and session round-trip.")
     }

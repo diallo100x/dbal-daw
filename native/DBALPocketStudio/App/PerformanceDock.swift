@@ -37,7 +37,7 @@ import SwiftUI
                             Button(s.showPads ? "Show Keyboard":"Show Pads"){s.releasePerformanceTouches();s.showPads.toggle()}
                             Toggle(isOn:$locked){Label(locked ? "Locked":"Unlocked",systemImage:locked ? "lock.fill":"lock.open")}.fixedSize()
                         }.font(.caption)
-                    }
+                    }.frame(height:30)
                     if s.showPads{DrumPads()}else{PianoKeys()}
                 }
                 CompactRepeaterMatrix().frame(width:210)

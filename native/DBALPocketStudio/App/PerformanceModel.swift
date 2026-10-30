@@ -132,7 +132,7 @@ enum PerformanceLayout {
         return min(maximum,max(0,value.isFinite ? value:35))
     }
     static func height(_ value: Double, maximum: Double) -> Double {
-        min(max(220,maximum),max(220,value.isFinite ? value:280))
+        min(max(260,maximum),max(260,value.isFinite ? value:280))
     }
 }
 

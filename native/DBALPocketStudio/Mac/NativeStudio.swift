@@ -25,6 +25,7 @@ import UniformTypeIdentifiers
     @StateObject private var waves=Waveforms()
     @StateObject private var midi=MacMIDIReceiver()
     var body:some View {
+        GeometryReader { layout in
         VStack(spacing:0){
             transport.padding(10)
             Divider()
@@ -36,9 +37,10 @@ import UniformTypeIdentifiers
                 }.frame(minWidth:500)
             }
             Divider()
-            PerformanceDock()
+            PerformanceDock(maximumHeight:min(460,max(260,Double(layout.size.height)*0.48)))
             HStack{Text(s.status+" • "+midi.status).font(.caption);Spacer();Text("a product of Diallo Beats Audio Lab").font(.caption2)}.padding(8)
-        }.frame(minWidth:1000,minHeight:620)
+        }
+        }.frame(minWidth:1000,minHeight:720)
         .sheet(isPresented:$s.showAudioMIDISettings){MacAudioMIDISettings(midi:midi).environmentObject(s)}
         .sheet(isPresented:Binding(get:{editingMIDI != nil},set:{if !$0{editingMIDI=nil}})){if let id=editingMIDI{MIDITimelineEditor(trackID:id).environmentObject(s).frame(minWidth:850,minHeight:600)}}
         .sheet(isPresented:Binding(get:{editingAudio != nil},set:{if !$0{editingAudio=nil}})){if let id=editingAudio{AudioTimelineEditor(clipID:id,waves:waves).environmentObject(s).frame(minWidth:800,minHeight:550)}}

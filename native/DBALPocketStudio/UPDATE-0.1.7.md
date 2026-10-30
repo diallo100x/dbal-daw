@@ -5,7 +5,7 @@ Undo/Redo beside the pads/keyboard selector. Both retain session edit history;
 performance gestures and layout preferences themselves are not session undo items.
 The existing editor and transport undo controls remain available.
 
-Drag the dock's top edge up/down to change its height (220–460 points). Pad rows
+Drag the dock's top edge up/down to change its height (260–460 points, capped to available window height). Pad rows
 and piano key heights follow the available dock space. Height persists on the
 device. The top-right XY repeater controls remain beside the playable area.
 

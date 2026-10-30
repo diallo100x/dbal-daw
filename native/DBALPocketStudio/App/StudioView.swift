@@ -22,6 +22,7 @@ private enum ImportAction: String, Identifiable { case audio, sf2, sfzFolder, pr
     @State private var zoom = 28.0
     @StateObject private var waveforms = Waveforms()
     var body: some View {
+        GeometryReader { layout in
         VStack(spacing: 0) {
             header
             transport.padding(8).background(Color(white:0.12))
@@ -61,7 +62,7 @@ private enum ImportAction: String, Identifiable { case audio, sf2, sfzFolder, pr
                 Button(s.showPads ? "Piano" : "Pads") { s.showPads.toggle() }
             }.padding(8) }.background(Color(white:0.1))
             trackStrip
-            PerformanceDock()
+            PerformanceDock(maximumHeight:min(460,max(260,Double(layout.size.height)*0.48)))
             HStack {
                 Text(s.status).font(.caption2).lineLimit(3).textSelection(.enabled)
                 Spacer()
@@ -102,6 +103,7 @@ private enum ImportAction: String, Identifiable { case audio, sf2, sfzFolder, pr
         }
         .onOpenURL { url in Task { await s.open(url) } }
         .alert("Pocket Studio",isPresented:Binding(get:{s.error != nil},set:{if !$0{s.error=nil}})) { Button("OK",role:.cancel){s.error=nil} } message:{Text(s.error ?? "")}
+        }
     }
     private var header: some View {
         HStack {
