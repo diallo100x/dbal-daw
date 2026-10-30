@@ -37,25 +37,15 @@ import UniformTypeIdentifiers
     @Environment(\.presentationMode) var presentation
     let effect:Bool
     let picked:(PluginRef)->Void
-    @State private var plugins:[PluginRef]=[]
-    var body:some View{
+    var body:some View {
         NavigationView {
-            List {
-                if plugins.isEmpty {Text("No compatible Audio Units found. Install the iPad or Mac version of your plugin, open its containing app once, then reopen this list.").font(.callout)}
-                ForEach(plugins){ref in Button(ref.name){picked(ref)}}
-            }.navigationTitle(effect ? "Audio Unit Effects" : "Audio Unit Instruments")
-                .toolbar{Button("Cancel"){presentation.wrappedValue.dismiss()}}
-        }.navigationViewStyle(.stack).onAppear{
-            let types:[OSType]=effect ? [kAudioUnitType_Effect,kAudioUnitType_MusicEffect] : [kAudioUnitType_MusicDevice]
-            plugins=types.flatMap{type in
-                AVAudioUnitComponentManager.shared().components(matching:AudioComponentDescription(componentType:type,componentSubType:0,componentManufacturer:0,componentFlags:0,componentFlagsMask:0)).map{c in
-                    let d=c.audioComponentDescription
-                    return PluginRef(name:c.name,type:d.componentType,subtype:d.componentSubType,manufacturer:d.componentManufacturer)
-                }
-            }.filter { $0.manufacturer != kAudioUnitManufacturer_Apple }.sorted{$0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending}
-        }
+            PluginDiscoveryList(effect: effect, picked: picked)
+                .navigationTitle(effect ? "Audio Unit Effects" : "Audio Unit Instruments")
+                .toolbar { Button("Cancel") { presentation.wrappedValue.dismiss() } }
+        }.navigationViewStyle(.stack)
     }
 }
+
 @MainActor struct SettingsView:View {
     @EnvironmentObject var s:Studio
     @Environment(\.presentationMode) var presentation

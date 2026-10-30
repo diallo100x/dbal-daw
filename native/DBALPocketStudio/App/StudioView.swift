@@ -95,7 +95,7 @@ private enum ImportAction: String, Identifiable { case audio, sf2, sfzFolder, pr
         HStack {
             VStack(alignment:.leading,spacing:2) {
                 Text("DBAL POCKET STUDIO").font(.system(size:18,weight:.heavy,design:.rounded)).foregroundColor(.cyan)
-                Text("\(Flavor.name) • Native iPad / Mac • v0.1.4").font(.caption2).foregroundColor(.secondary)
+                Text("\(Flavor.name) • Native iPad / Mac • v0.1.6").font(.caption2).foregroundColor(.secondary)
             }
             Spacer()
             TextField("Session name",text:Binding(get:{s.session.name},set:{s.session.name=String($0.prefix(80));s.save()})).textFieldStyle(.roundedBorder).frame(maxWidth:240)

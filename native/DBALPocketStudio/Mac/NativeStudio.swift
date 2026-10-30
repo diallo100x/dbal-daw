@@ -181,15 +181,15 @@ import UniformTypeIdentifiers
     let effect:Bool
     let picked:(PluginRef)->Void
     @Environment(\.presentationMode) var presentation
-    @State private var plugins:[PluginRef]=[]
     var body:some View {
-        VStack{
-            HStack{Text(effect ? "AU v2 / AUv3 Effects":"AU v2 / AUv3 Instruments").font(.headline);Spacer();Button("Close"){presentation.wrappedValue.dismiss()}}
-            List(plugins){plugin in Button(plugin.name){picked(plugin)}}
-            Text("Install Apple Silicon compatible Mac plugins. Missing custom editors use generic parameters. VST hosting is not included.").font(.caption)
-        }.padding().frame(width:550,height:450).onAppear{
-            let types:[OSType]=effect ? [kAudioUnitType_Effect,kAudioUnitType_MusicEffect]:[kAudioUnitType_MusicDevice]
-            plugins=types.flatMap{type in AVAudioUnitComponentManager.shared().components(matching:AudioComponentDescription(componentType:type,componentSubType:0,componentManufacturer:0,componentFlags:0,componentFlagsMask:0)).map{c in let d=c.audioComponentDescription;return PluginRef(name:c.name,type:d.componentType,subtype:d.componentSubType,manufacturer:d.componentManufacturer)}}.sorted{$0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending}
-        }
+        VStack {
+            HStack {
+                Text(effect ? "AU v2 / AUv3 Effects" : "AU v2 / AUv3 Instruments").font(.headline)
+                Spacer()
+                Button("Close") { presentation.wrappedValue.dismiss() }
+            }
+            PluginDiscoveryList(effect: effect, picked: picked)
+            Text("Install compatible Mac plugins. VST hosting is not included.").font(.caption)
+        }.padding().frame(width:550,height:550)
     }
 }

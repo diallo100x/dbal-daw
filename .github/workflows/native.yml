@@ -17,6 +17,7 @@ jobs:
           ./Scripts/test_midi_edits.sh
           ./Scripts/test_apple_audio.sh
           ./Scripts/test_graph_guard.sh
+          ./Scripts/test_plugin_discovery.sh
       - name: Build native Mac DAW
         run: |
           set -o pipefail
