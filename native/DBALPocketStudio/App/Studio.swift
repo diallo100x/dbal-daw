@@ -64,10 +64,11 @@ import UniformTypeIdentifiers
     private var redoStack: [PocketSession] = []
     var held: [Int:(UUID,Double)] = [:]
     var soundingNotes:[Int:Int]=[:]
+    var heldVelocities:[Int:Int]=[:]
     @Published var repeaterEnabled=false
     @Published var repeatBeats=0.25
     @Published var midiSnap=true
-    @Published var midiPitchMatrix=true
+    @Published var midiMatrixMode=MIDIMatrixMode.timingVelocity
     @Published var midiX=0.5
     @Published var midiY=0.75
     @Published var midiRoot=60
@@ -231,7 +232,7 @@ import UniformTypeIdentifiers
         playing = false
         audio.setTransport(session, beat: beat, playing: false)
         for (note,entry) in held { audio.send(track: entry.0, note: soundingNotes[note] ?? note, velocity: 0) }; held.removeAll()
-        audio.stopPlayers();soundingNotes.removeAll();cancelRepeater()
+        audio.stopPlayers();soundingNotes.removeAll();heldVelocities.removeAll();cancelRepeater()
         if !wasPlaying && resetIfStopped { beat = 0 }
     }
     func toggleRecord() async {
@@ -259,10 +260,10 @@ import UniformTypeIdentifiers
         for (note, entry) in held {
             audio.send(track: entry.0, note: soundingNotes[note] ?? note, velocity: 0)
             if let i = session.tracks.firstIndex(where: { $0.id == entry.0 }) {
-                session.tracks[i].notes.append(MIDINoteEdits.recorded(start: max(takeStartBeat,entry.1), end: beat, note: soundingNotes[note] ?? note, grid: inputQuantize ? grid : nil))
+                session.tracks[i].notes.append(MIDINoteEdits.recorded(start: max(takeStartBeat,entry.1), end: beat, note: soundingNotes[note] ?? note, velocity: heldVelocities[note] ?? 100, grid: inputQuantize ? grid : nil))
             }
         }
-        held.removeAll()
+        held.removeAll();heldVelocities.removeAll()
         do {
             if let (id,url,host) = try audio.finishRecording(), let i = session.tracks.firstIndex(where: { $0.id == id }) {
                 let f = try AVAudioFile(forReading: url)

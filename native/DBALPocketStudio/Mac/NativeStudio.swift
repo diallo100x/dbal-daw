@@ -36,6 +36,7 @@ import UniformTypeIdentifiers
                 }.frame(minWidth:500)
             }
             Divider()
+            PerformanceDock()
             HStack{Text(s.status+" • "+midi.status).font(.caption);Spacer();Text("a product of Diallo Beats Audio Lab").font(.caption2)}.padding(8)
         }.frame(minWidth:1000,minHeight:620)
         .sheet(isPresented:$s.showAudioMIDISettings){MacAudioMIDISettings(midi:midi).environmentObject(s)}
@@ -54,7 +55,7 @@ import UniformTypeIdentifiers
     private var transport:some View {
         VStack(alignment:.leading,spacing:8){
             HStack{
-                Text("DBAL DAW • Native Mac").font(.headline)
+                Text("DBAL DAW • Native Mac • v0.1.7").font(.headline)
                 Button("Open…"){openProject()};Button("Save"){s.save(capture:true)}.keyboardShortcut("s")
                 Menu("Export"){Button("Portable Project"){s.exportProject()};Button("Stereo WAV"){Task{await s.exportMix()}}}
                 Menu("Edit") {
@@ -166,7 +167,7 @@ import UniformTypeIdentifiers
     }
     private func receiveMIDI(_ message:MIDIMessage){
         let kind=message.status&0xF0,channel=Int(message.status&0x0F)
-        if kind==0x90 && message.data2>0{s.noteOn(Int(message.data1))}
+        if kind==0x90 && message.data2>0{s.noteOn(Int(message.data1),velocity:Int(message.data2))}
         else if kind==0x80 || (kind==0x90 && message.data2==0){s.noteOff(Int(message.data1))}
         else if kind==0xB0 && message.data1==7 && channel<s.session.tracks.count {
             s.session.tracks[channel].volume=Float(message.data2)/127;s.audio.updateMixer(s.session)

@@ -110,3 +110,45 @@ enum SliceMath {
         }
     }
 }
+
+
+enum MIDIMatrixMode: String, CaseIterable {
+    case timingVelocity = "Timing / Velocity"
+    case timingPitch = "Timing / Pitch"
+    case pitchVelocity = "Pitch / Velocity"
+}
+
+struct MIDIExpression {
+    var pitch: Int
+    var velocity: Int
+    var beats: Double
+}
+
+enum PerformanceLayout {
+    static let whiteNotes = (0...127).filter { [0,2,4,5,7,9,11].contains($0 % 12) }
+    static func keyWidth(_ value: Double) -> Double { value.isFinite ? min(110,max(22,value)) : 46 }
+    static func firstWhite(_ value: Double, width: Double, viewport: Double) -> Double {
+        let maximum=max(0,Double(whiteNotes.count)-max(1,viewport)/keyWidth(width))
+        return min(maximum,max(0,value.isFinite ? value:35))
+    }
+    static func height(_ value: Double, maximum: Double) -> Double {
+        min(max(220,maximum),max(220,value.isFinite ? value:280))
+    }
+}
+
+extension PerformanceMath {
+    static func expression(mode: MIDIMatrixMode, x: Double, y: Double,
+                           snap: Bool, repeatBeats: Double) -> MIDIExpression {
+        let a=x.isFinite ? min(1,max(0,x)):0.5
+        let b=y.isFinite ? min(1,max(0,y)):0.5
+        let pitch=mode == .pitchVelocity ? Int((a*24-12).rounded()) :
+            mode == .timingPitch ? Int((b*24-12).rounded()) : 0
+        let velocity=mode == .timingPitch ? 100:max(1,min(127,Int(b*126)+1))
+        let beats=mode == .pitchVelocity ? (repeatBeats.isFinite ? min(4,max(0.0625,repeatBeats)):0.25) : division(a,snap:snap)
+        return MIDIExpression(pitch:pitch,velocity:velocity,beats:beats)
+    }
+    static func velocity(_ incoming: Int?, expression: Int) -> Int {
+        guard let incoming=incoming else{return min(127,max(1,expression))}
+        return min(127,max(1,Int((Double(min(127,max(1,incoming)))*Double(min(127,max(1,expression)))/100).rounded())))
+    }
+}

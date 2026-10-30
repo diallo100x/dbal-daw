@@ -61,7 +61,7 @@ private enum ImportAction: String, Identifiable { case audio, sf2, sfzFolder, pr
                 Button(s.showPads ? "Piano" : "Pads") { s.showPads.toggle() }
             }.padding(8) }.background(Color(white:0.1))
             trackStrip
-            if s.showPads { DrumPads().frame(height:140) } else { PianoKeys().frame(height:120) }
+            PerformanceDock()
             HStack {
                 Text(s.status).font(.caption2).lineLimit(3).textSelection(.enabled)
                 Spacer()
@@ -107,7 +107,7 @@ private enum ImportAction: String, Identifiable { case audio, sf2, sfzFolder, pr
         HStack {
             VStack(alignment:.leading,spacing:2) {
                 Text("DBAL POCKET STUDIO").font(.system(size:18,weight:.heavy,design:.rounded)).foregroundColor(.cyan)
-                Text("\(Flavor.name) • Native iPad / Mac • v0.1.6").font(.caption2).foregroundColor(.secondary)
+                Text("\(Flavor.name) • Native iPad / Mac • v0.1.7").font(.caption2).foregroundColor(.secondary)
             }
             Spacer()
             TextField("Session name",text:Binding(get:{s.session.name},set:{s.session.name=String($0.prefix(80));s.save()})).textFieldStyle(.roundedBorder).frame(maxWidth:240)

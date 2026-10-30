@@ -14,8 +14,7 @@ import UniformTypeIdentifiers
                     }
                     if let i=s.selectedIndex,!s.session.tracks[i].isAudio {
                         SimpleSamplerEditor()
-                        PianoKeys().frame(height:110)
-                        DrumPads().frame(height:145)
+                        PerformanceDock()
                         Text("Pads send GM drum notes. Use Sampler Pads or Starter Drums for a drum kit; Sampler Keys maps its sample over the keyboard.").font(.caption).foregroundColor(.secondary)
                     }
                     MIDIControls()
@@ -34,13 +33,13 @@ import UniformTypeIdentifiers
             Text("MIDI PERFORMANCE").font(.headline)
             HStack {
                 Toggle("Note repeater",isOn:$s.repeaterEnabled)
-                Toggle("Pitch matrix",isOn:$s.midiPitchMatrix)
+                Picker("Matrix axes",selection:$s.midiMatrixMode){ForEach(MIDIMatrixMode.allCases,id:\.self){Text($0.rawValue).tag($0)}}
             }.font(.caption)
             HStack {
                 Stepper("Root MIDI \(s.midiRoot)",value:$s.midiRoot,in:0...127)
                 Picker("Repeat",selection:$s.repeatBeats){Text("1/4").tag(1.0);Text("1/8").tag(0.5);Text("1/16").tag(0.25);Text("1/32").tag(0.125);Text("1/64").tag(0.0625)}
             }.font(.caption)
-            XYMatrix(title:"MIDI • \(s.midiPitchMatrix ? "Pitch / Velocity":"Repeat rate / Velocity")",x:s.midiX,y:s.midiY,snap:$s.midiSnap,stepsX:s.midiPitchMatrix ? 24:6,onBegin:{},onPoint:{x,y in s.updateMIDIMatrix(x:x,y:y)},onEnd:{s.noteOff(-1)})
+            XYMatrix(title:"MIDI • \(s.midiMatrixMode.rawValue)",x:s.midiX,y:s.midiY,snap:$s.midiSnap,stepsX:s.midiMatrixMode == .pitchVelocity ? 24:6,stepsY:s.midiMatrixMode == .timingPitch ? 24:8,onBegin:{},onPoint:{x,y in s.updateMIDIMatrix(x:x,y:y)},onEnd:{s.noteOff(-1)})
             Text("Generates MIDI notes for the selected instrument track. Arm it and record to capture notes. Repeater also applies to held piano keys and pads. \(s.midiPitchOffset) semitones • velocity \(s.midiVelocity)").font(.caption)
         }.disabled(s.selectedIndex.map{s.session.tracks[$0].isAudio} ?? true)
     }
@@ -68,6 +67,8 @@ import UniformTypeIdentifiers
     let y:Double
     @Binding var snap:Bool
     var stepsX:Int=8
+    var stepsY:Int=8
+    var matrixHeight:Double=180
     let onBegin:()->Void
     let onPoint:(Double,Double)->Void
     let onEnd:()->Void
@@ -86,18 +87,18 @@ import UniformTypeIdentifiers
                         for i in 0...stepsX {
                             var p=Path();p.move(to:CGPoint(x:size.width*CGFloat(i)/CGFloat(stepsX),y:0));p.addLine(to:CGPoint(x:size.width*CGFloat(i)/CGFloat(stepsX),y:size.height));context.stroke(p,with:.color(.cyan.opacity(0.18)),lineWidth:1)
                         }
-                        for j in 0...8 {
-                            var p=Path();p.move(to:CGPoint(x:0,y:size.height*CGFloat(j)/8));p.addLine(to:CGPoint(x:size.width,y:size.height*CGFloat(j)/8));context.stroke(p,with:.color(.cyan.opacity(0.18)),lineWidth:1)
+                        for j in 0...stepsY {
+                            var p=Path();p.move(to:CGPoint(x:0,y:size.height*CGFloat(j)/CGFloat(stepsY)));p.addLine(to:CGPoint(x:size.width,y:size.height*CGFloat(j)/CGFloat(stepsY)));context.stroke(p,with:.color(.cyan.opacity(0.18)),lineWidth:1)
                         }
                     }
                     Circle().fill(Color.cyan).frame(width:16,height:16).position(x:geo.size.width*x,y:geo.size.height*(1-y))
                 }.cornerRadius(8).contentShape(Rectangle()).gesture(DragGesture(minimumDistance:0).onChanged{v in
                     if !down{down=true;onBegin()}
                     var a=min(1,max(0,Double(v.location.x/geo.size.width))),b=min(1,max(0,1-Double(v.location.y/geo.size.height)))
-                    if snap{a=(a*Double(stepsX)).rounded()/Double(stepsX);b=(b*8).rounded()/8}
+                    if snap{a=(a*Double(stepsX)).rounded()/Double(stepsX);b=(b*Double(stepsY)).rounded()/Double(stepsY)}
                     onPoint(a,b)
                 }.onEnded{_ in down=false;onEnd()})
-            }.frame(height:180)
+            }.frame(height:matrixHeight)
         }.onDisappear{if down{down=false;onEnd()}}
     }
 }

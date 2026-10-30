@@ -1,10 +1,10 @@
-# DBAL Pocket Studio 0.1.6 — Audio Unit discovery refresh
+# DBAL Pocket Studio 0.1.7 — resizable performance dock
 
 A separate native DAW project for Diallo Beats, prioritizing an iPad limited to iPadOS 15.4.1. No changes to DBAL Web DAW or the DJ DAW. No account, API, network service, package manager, or AudioKit dependency is required.
 
 **This is an initial source prototype, not a verified device build.** The portable C sampler and project structure were tested in Linux. Native Mac and Legacy simulator compilation, edit logic and offline audio checks run in CI. Signing, hardware audio routing, AUv3 sessions, Bluetooth/network MIDI, background recording and gesture layout still require device validation. There is no precompiled IPA in this ZIP.
 
-See **UPDATE-0.1.6.md** for Audio Unit discovery refresh and diagnostics. See **UPDATE-0.1.5.md** for Mac track/lane selection, piano-roll and waveform editors, input monitoring, Bluetooth and network MIDI settings. See **UPDATE-0.1.4.md** for the reported Mac connection-crash protection and rebuild instructions. See **UPDATE-0.1.3.md** for the native macOS target, AU v2/AUv3 hosting, sampler time stretching/pitch, six banks of eight slices, Pocket MIDI Remote mode and build/test commands. Prior Pocket features remain included.
+See **UPDATE-0.1.7.md** for the resizable pads/keyboard, lock and repeater matrix. See **UPDATE-0.1.6.md** for Audio Unit discovery refresh and diagnostics. See **UPDATE-0.1.5.md** for Mac track/lane selection, piano-roll and waveform editors, input monitoring, Bluetooth and network MIDI settings. See **UPDATE-0.1.4.md** for the reported Mac connection-crash protection and rebuild instructions. See **UPDATE-0.1.3.md** for the native macOS target, AU v2/AUv3 hosting, sampler time stretching/pitch, six banks of eight slices, Pocket MIDI Remote mode and build/test commands. Prior Pocket features remain included.
 
 ## Native Mac build
 

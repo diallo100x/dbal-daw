@@ -1,32 +1,36 @@
 import SwiftUI
 import AVFoundation
 
-struct RepeatHold {var track:UUID;var base:Int;var next:Double}
+struct RepeatHold {var track:UUID;var base:Int;var next:Double;var velocity:Int?=nil}
 struct PendingNoteOff {var track:UUID;var note:Int;var seconds:Double}
 @MainActor extension Studio {
-    var midiPitchOffset:Int {midiPitchMatrix ? Int((midiX*24-12).rounded()):0}
-    var midiVelocity:Int {max(1,min(127,Int(midiY*126)+1))}
-    var effectiveRepeatBeats:Double {midiPitchMatrix ? repeatBeats:PerformanceMath.division(midiX,snap:midiSnap)}
-    func noteOn(_ key:Int) {
+    var midiExpression:MIDIExpression {PerformanceMath.expression(mode:midiMatrixMode,x:midiX,y:midiY,snap:midiSnap,repeatBeats:repeatBeats)}
+    var midiPitchOffset:Int {midiExpression.pitch}
+    var midiVelocity:Int {midiExpression.velocity}
+    var effectiveRepeatBeats:Double {midiExpression.beats}
+    func noteOn(_ key:Int, velocity incoming:Int? = nil) {
         guard !busy,let i=selectedIndex,!session.tracks[i].isAudio,held[key]==nil,repeatHeld[key]==nil else{return}
         let track=session.tracks[i].id,base=key == -1 ? midiRoot:key
         if repeaterEnabled {
             let rate=effectiveRepeatBeats
             let delay=midiSnap && playing ? max(0,(ceil(currentBeat/rate)*rate-currentBeat)*60/session.tempo):0
-            repeatHeld[key]=RepeatHold(track:track,base:base,next:nowSeconds+delay)
+            repeatHeld[key]=RepeatHold(track:track,base:base,next:nowSeconds+delay,velocity:incoming)
             performanceTick();startPerformanceTimer();return
         }
         let note=max(0,min(127,base+midiPitchOffset))
-        audio.send(track:track,note:note,velocity:key == -1 ? midiVelocity:100)
+        let velocity=PerformanceMath.velocity(incoming,expression:midiVelocity)
+        audio.send(track:track,note:note,velocity:velocity)
+        heldVelocities[key]=velocity
         held[key]=(track,currentBeat);soundingNotes[key]=note
     }
     func noteOff(_ key:Int) {
         if repeatHeld.removeValue(forKey:key) != nil{return}
         guard let entry=held.removeValue(forKey:key) else{return}
         let note=soundingNotes.removeValue(forKey:key) ?? key
+        let velocity=heldVelocities.removeValue(forKey:key) ?? 100
         audio.send(track:entry.0,note:note,velocity:0)
         if recording,armed==entry.0,let i=session.tracks.firstIndex(where:{$0.id==entry.0}) {
-            session.tracks[i].notes.append(MIDINoteEdits.recorded(start:entry.1,end:currentBeat,note:note,grid:inputQuantize ? grid:nil))
+            session.tracks[i].notes.append(MIDINoteEdits.recorded(start:entry.1,end:currentBeat,note:note,velocity:velocity,grid:inputQuantize ? grid:nil))
         }
     }
     func startPerformanceTimer(){
@@ -41,7 +45,7 @@ struct PendingNoteOff {var track:UUID;var note:Int;var seconds:Double}
         let interval=effectiveRepeatBeats*60/session.tempo
         for key in Array(repeatHeld.keys) {
             guard var item=repeatHeld[key],now>=item.next else{continue}
-            let note=max(0,min(127,item.base+midiPitchOffset)),velocity=key == -1 ? midiVelocity:100
+            let note=max(0,min(127,item.base+midiPitchOffset)),velocity=PerformanceMath.velocity(item.velocity,expression:midiVelocity)
             audio.send(track:item.track,note:note,velocity:velocity)
             pendingNoteOffs.append(PendingNoteOff(track:item.track,note:note,seconds:now+interval*0.65))
             if recording,now>=startSeconds,armed==item.track,let i=session.tracks.firstIndex(where:{$0.id==item.track}) {
@@ -56,10 +60,14 @@ struct PendingNoteOff {var track:UUID;var note:Int;var seconds:Double}
         for off in pendingNoteOffs{audio.send(track:off.track,note:off.note,velocity:0)}
         pendingNoteOffs=[];repeatHeld=[:]
     }
-    func updateMIDIMatrix(x:Double,y:Double){
+    func updateMIDIMatrix(x:Double,y:Double,triggerRoot:Bool=true){
         midiX=x;midiY=y
         if let output=soundingNotes[-1],output != max(0,min(127,midiRoot+midiPitchOffset)){noteOff(-1)}
-        noteOn(-1)
+        if triggerRoot{noteOn(-1)}
+    }
+    func releasePerformanceTouches(){
+        for key in Array(held.keys){noteOff(key)}
+        cancelRepeater()
     }
     func commitClip(_ clip:AudioClip){
         guard !busy,!recording,let ti=session.tracks.firstIndex(where:{$0.clips.contains{$0.id==clip.id}}),let ci=session.tracks[ti].clips.firstIndex(where:{$0.id==clip.id}),clip != session.tracks[ti].clips[ci] else{return}
