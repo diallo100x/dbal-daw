@@ -36,3 +36,27 @@ save/reopen and WAV export. For an effect, use an audible audio track and test
 bypass/removal and saved-state restoration. Third-party compatibility on iPadOS
 15.4.1 still needs the physical device; Apple compilation and a local registered
 metadata fixture do not establish that all installed AUv3s work.
+
+## MIDI quantize and timeline editors (iPad and Mac)
+
+Edit now opens MIDI Timeline Editor, Detailed Waveform Editor, or (on iPad)
+existing clip properties and note list. The Mac piano roll and zoomable clip
+waveform editor are now shared with iPad, retaining touch-compatible trim/fade
+handles, pitch/time dragging, note-length resizing, numeric velocity and timing,
+undo/redo, and original source audio. The waveform is a peak overview, not a
+sample-level destructive audio editor. Controls scroll horizontally where needed.
+
+Quantize selected note / Quantize track can snap note starts, lengths, or both
+using the Grid division independently of Snap. Pitch, velocity, note identity,
+and (in starts-only mode) duration remain intact. One quantize operation is one
+undo step. Grid choices are 1/4, 1/8, 1/16 and 1/32; swing/triplets are not included.
+
+Input Quantize is a separate, persisted app preference, off initially. It affects
+recorded starts from the existing on-screen performance and Mac MIDI-input paths;
+monitored sound remains immediate and recorded gate lengths stay as played. It
+covers ordinary note-off, stopping while holding a note, and note-repeater capture.
+It does not add an external MIDI receiver to the iPad app. Before this patch,
+ordinary recorded notes were silently quantized according to timeline Snap while
+held-at-stop notes and repeater events followed different rules. All three now
+use the explicit Input Quantize choice. Editing/quantize actions are blocked during
+recording; existing sessions need no schema migration.

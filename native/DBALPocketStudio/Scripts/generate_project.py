@@ -19,7 +19,7 @@ for name,kind in files:
     fileids[name]=add('file:'+name,f'{{isa=PBXFileReference;lastKnownFileType={quoted(kind)};path={quoted(name)};sourceTree="<group>";}}')
 kit=add('kit','{isa=PBXFileReference;lastKnownFileType=folder;path="Resources/StarterKit";sourceTree="<group>";}')
 products=[];targets=[]; target_ids={}
-shared_mac={'AudioEngine.swift','Session.swift','PerformanceModel.swift','SFZ.swift','XYAudioUnit.swift','SampleTransform.swift','Studio.swift','StudioPerformance.swift','ClipEdits.swift','ClipTile.swift','MusicalControls.swift','SamplerControls.swift','PerformancePanel.swift','WaveformHandles.swift','Waveforms.swift','MIDIMessage.swift','MIDINoteEdits.swift','PluginDiscovery.swift'}
+shared_mac={'AudioEngine.swift','Session.swift','PerformanceModel.swift','SFZ.swift','XYAudioUnit.swift','SampleTransform.swift','Studio.swift','StudioPerformance.swift','ClipEdits.swift','ClipTile.swift','MusicalControls.swift','SamplerControls.swift','PerformancePanel.swift','WaveformHandles.swift','Waveforms.swift','MIDIMessage.swift','MIDINoteEdits.swift','PluginDiscovery.swift','TimelineEditors.swift','MIDIQuantizeTools.swift'}
 for flavor in ['Legacy','Pro','Mac']:
     native=flavor=='Mac'
     name='DBALNativeMac' if native else 'Pocket'+flavor

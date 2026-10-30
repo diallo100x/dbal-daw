@@ -15,6 +15,8 @@ private enum ImportAction: String, Identifiable { case audio, sf2, sfzFolder, pr
     @State private var settings = false
     @State private var editor = false
     @State private var noteEditor = false
+    @State private var noteList = false
+    @State private var waveEditor = false
     @State private var performance = false
     @State private var remote = false
     @State private var zoom = 28.0
@@ -23,7 +25,7 @@ private enum ImportAction: String, Identifiable { case audio, sf2, sfzFolder, pr
         VStack(spacing: 0) {
             header
             transport.padding(8).background(Color(white:0.12))
-            HStack {
+            ScrollView(.horizontal,showsIndicators:false) { HStack {
                 Menu("Session") {
                     Button("New Session") { Task { await s.newSession() } }
                     Button("Open Project Folder…") { importAction = .project }
@@ -31,13 +33,21 @@ private enum ImportAction: String, Identifiable { case audio, sf2, sfzFolder, pr
                     Button("Export Portable Project…") { s.exportProject() }
                     Button("Export Stereo WAV…") { Task { await s.exportMix() } }
                 }
+                Menu("Edit") {
+                    Button("MIDI Timeline Editor…") { noteEditor=true }.disabled(s.selectedIndex.map{s.session.tracks[$0].isAudio} ?? true)
+                    Button("MIDI Note List…") { noteList=true }.disabled(s.selectedIndex.map{s.session.tracks[$0].isAudio} ?? true)
+                    Button("Detailed Waveform Editor…") { waveEditor=true }.disabled(s.selectedClip == nil)
+                    Button("Audio Clip Properties…") { editor=true }.disabled(s.selectedClip == nil)
+                    Button("Quantize MIDI Track") { if let id=s.selected{s.quantizeNotes(track:id)} }.disabled(s.selectedIndex.map{s.session.tracks[$0].isAudio} ?? true)
+                    Toggle("Input Quantize",isOn:$s.inputQuantize)
+                }
                 Menu("+ Track") { Button("Audio / Vocals") { s.addTrack(audio:true) }; Button("Instrument / MIDI") { s.addTrack(audio:false) } }
                 Button("Import Audio") { importAction = .audio }
                 Spacer()
                 Button("Remote"){remote=true}
                 Button("Sampler / XY") { performance=true }
                 Button("Settings") { settings = true }
-            }.font(.caption).padding(8).disabled(s.busy || s.recording)
+            }.font(.caption).padding(8) }.disabled(s.busy || s.recording)
             TimelineView(zoom:zoom,waveforms:waveforms).environmentObject(s)
             ScrollView(.horizontal,showsIndicators:false) { HStack {
                 Text("Zoom").font(.caption)
@@ -81,7 +91,9 @@ private enum ImportAction: String, Identifiable { case audio, sf2, sfzFolder, pr
         .sheet(isPresented:$performance) { PerformancePanel().environmentObject(s) }
         .sheet(isPresented:$settings) { SettingsView().environmentObject(s) }
         .sheet(isPresented:$editor) { ClipEditor().environmentObject(s) }
-        .sheet(isPresented:$noteEditor) { NoteEditor().environmentObject(s) }
+        .sheet(isPresented:$noteList) { NoteEditor().environmentObject(s) }
+        .fullScreenCover(isPresented:$noteEditor) { if let id=s.selected{MIDITimelineEditor(trackID:id).environmentObject(s)} }
+        .fullScreenCover(isPresented:$waveEditor) { if let id=s.selectedClip{AudioTimelineEditor(clipID:id,waves:waveforms).environmentObject(s)} }
         .sheet(isPresented:Binding(get:{s.pluginController != nil},set:{if !$0{s.pluginController=nil;s.save(capture:true)}})) {
             if let vc=s.pluginController { PluginPanel(controller:vc) { s.pluginController=nil;s.save(capture:true) } }
         }
@@ -124,6 +136,7 @@ private enum ImportAction: String, Identifiable { case audio, sf2, sfzFolder, pr
             ScrollView(.horizontal,showsIndicators:false) {
                 HStack(spacing:14) {
                     Toggle("Snap",isOn:$s.snap).fixedSize()
+                    Toggle("Input Quantize",isOn:$s.inputQuantize).fixedSize().disabled(s.recording)
                     Picker("Grid",selection:$s.grid) { Text("1/4").tag(1.0);Text("1/8").tag(0.5);Text("1/16").tag(0.25);Text("1/32").tag(0.125) }.pickerStyle(.menu).frame(width:85)
                     Button { s.undo() } label:{Image(systemName:"arrow.uturn.backward").frame(width:32,height:32)}
                         .disabled(!s.canUndo || s.recording).accessibilityLabel("Undo")

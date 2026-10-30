@@ -141,6 +141,7 @@ import UniformTypeIdentifiers
     var body:some View{
         NavigationView{
             Form{
+                if let id=s.selected { MIDIQuantizeTools(trackID:id) }
                 Stepper("MIDI note \(pitch)",value:$pitch,in:0...127)
                 Picker("Length",selection:$length){Text("1/16").tag(0.25);Text("1/8").tag(0.5);Text("1/4").tag(1.0);Text("1/2").tag(2.0);Text("Bar").tag(Double(s.session.beatsPerBar))}
                 Button("Add Note at Cursor"){

@@ -26,8 +26,7 @@ struct PendingNoteOff {var track:UUID;var note:Int;var seconds:Double}
         let note=soundingNotes.removeValue(forKey:key) ?? key
         audio.send(track:entry.0,note:note,velocity:0)
         if recording,armed==entry.0,let i=session.tracks.firstIndex(where:{$0.id==entry.0}) {
-            let onset=max(0,quantize(entry.1))
-            session.tracks[i].notes.append(MIDIEvent(beat:onset,duration:max(0.03125,quantize(currentBeat)-onset),note:note))
+            session.tracks[i].notes.append(MIDINoteEdits.recorded(start:entry.1,end:currentBeat,note:note,grid:inputQuantize ? grid:nil))
         }
     }
     func startPerformanceTimer(){
@@ -46,7 +45,7 @@ struct PendingNoteOff {var track:UUID;var note:Int;var seconds:Double}
             audio.send(track:item.track,note:note,velocity:velocity)
             pendingNoteOffs.append(PendingNoteOff(track:item.track,note:note,seconds:now+interval*0.65))
             if recording,now>=startSeconds,armed==item.track,let i=session.tracks.firstIndex(where:{$0.id==item.track}) {
-                session.tracks[i].notes.append(MIDIEvent(beat:max(0,currentBeat),duration:effectiveRepeatBeats*0.65,note:note,velocity:velocity))
+                session.tracks[i].notes.append(MIDINoteEdits.recorded(start:currentBeat,end:currentBeat+effectiveRepeatBeats*0.65,note:note,velocity:velocity,grid:inputQuantize ? grid:nil))
             }
             item.next+=interval;if item.next<=now{item.next=now+interval};repeatHeld[key]=item
         }
@@ -122,5 +121,21 @@ struct PendingNoteOff {var track:UUID;var note:Int;var seconds:Double}
             if graph{change({$0.tracks[i].xyFX=state},graph:true)}
             else{guard !busy,!recording else{return};checkpoint();session.tracks[i].xyFX=state;audio.updateFX(session);save()}
         }else{session.tracks[i].xyFX=state;audio.updateFX(session)}
+    }
+}
+
+@MainActor extension Studio {
+    func quantizeNotes(track: UUID, selected: UUID? = nil, mode: MIDIQuantizeMode = .starts) {
+        guard let ti = session.tracks.firstIndex(where: { $0.id == track && !$0.isAudio }),
+              !session.tracks[ti].notes.isEmpty else { return }
+        let division = grid
+        change { session in
+            for ni in session.tracks[ti].notes.indices {
+                let note = session.tracks[ti].notes[ni]
+                if selected == nil || note.id == selected {
+                    session.tracks[ti].notes[ni] = MIDINoteEdits.quantized(note, grid: division, mode: mode)
+                }
+            }
+        }
     }
 }

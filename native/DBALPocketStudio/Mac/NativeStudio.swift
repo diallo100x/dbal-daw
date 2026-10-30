@@ -39,8 +39,8 @@ import UniformTypeIdentifiers
             HStack{Text(s.status+" • "+midi.status).font(.caption);Spacer();Text("a product of Diallo Beats Audio Lab").font(.caption2)}.padding(8)
         }.frame(minWidth:1000,minHeight:620)
         .sheet(isPresented:$s.showAudioMIDISettings){MacAudioMIDISettings(midi:midi).environmentObject(s)}
-        .sheet(isPresented:Binding(get:{editingMIDI != nil},set:{if !$0{editingMIDI=nil}})){if let id=editingMIDI{MacNoteEditor(trackID:id).environmentObject(s)}}
-        .sheet(isPresented:Binding(get:{editingAudio != nil},set:{if !$0{editingAudio=nil}})){if let id=editingAudio{MacAudioEditor(clipID:id,waves:waves).environmentObject(s)}}
+        .sheet(isPresented:Binding(get:{editingMIDI != nil},set:{if !$0{editingMIDI=nil}})){if let id=editingMIDI{MIDITimelineEditor(trackID:id).environmentObject(s).frame(minWidth:850,minHeight:600)}}
+        .sheet(isPresented:Binding(get:{editingAudio != nil},set:{if !$0{editingAudio=nil}})){if let id=editingAudio{AudioTimelineEditor(clipID:id,waves:waves).environmentObject(s).frame(minWidth:800,minHeight:550)}}
         .sheet(isPresented:$performance){PerformancePanel().environmentObject(s).frame(minWidth:800,minHeight:650)}
         .sheet(isPresented:$plugins){MacPluginPicker(effect:effect){ref in plugins=false;s.choosePlugin(ref,effect:effect)}}
         .sheet(isPresented:Binding(get:{s.pluginController != nil},set:{if !$0{s.pluginController=nil}})){
@@ -57,6 +57,11 @@ import UniformTypeIdentifiers
                 Text("DBAL DAW • Native Mac").font(.headline)
                 Button("Open…"){openProject()};Button("Save"){s.save(capture:true)}.keyboardShortcut("s")
                 Menu("Export"){Button("Portable Project"){s.exportProject()};Button("Stereo WAV"){Task{await s.exportMix()}}}
+                Menu("Edit") {
+                    Button("MIDI Timeline Editor…") { editingMIDI=s.selected }.disabled(s.selectedIndex.map{s.session.tracks[$0].isAudio} ?? true)
+                    Button("Detailed Waveform Editor…") { editingAudio=s.selectedClip }.disabled(s.selectedClip == nil)
+                    Button("Quantize MIDI track") { if let id=s.selected{s.quantizeNotes(track:id)} }.disabled(s.selectedIndex.map{s.session.tracks[$0].isAudio} ?? true)
+                }.disabled(s.recording || s.busy)
                 Button("Audio & MIDI Settings…"){s.showAudioMIDISettings=true}
                 Spacer();Button("Restart Audio"){Task{await s.rebuild()}}.disabled(s.busy || s.recording)
             }
@@ -74,6 +79,7 @@ import UniformTypeIdentifiers
                     session.tempo=value
                 },graph:true)}),in:30...300).frame(width:150).disabled(s.recording || s.playing)
                 Toggle("Snap",isOn:$s.snap).toggleStyle(.checkbox)
+                Toggle("Input Quantize",isOn:$s.inputQuantize).toggleStyle(.checkbox).disabled(s.recording)
                 Picker("Grid",selection:$s.grid){Text("1/4").tag(1.0);Text("1/8").tag(0.5);Text("1/16").tag(0.25);Text("1/32").tag(0.125)}.frame(width:115)
             }.disabled(s.busy)
             HStack{

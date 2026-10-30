@@ -36,6 +36,9 @@ import UniformTypeIdentifiers
     @Published var status = "Starting audio…"
     @Published var error: String?
     @Published var snap = true
+    @Published var inputQuantize = false {
+        didSet { UserDefaults.standard.set(inputQuantize, forKey: "inputQuantize") }
+    }
     @Published var grid: Double = 0.25
     @Published var metronome = false
     @Published var preRoll = 0 {
@@ -94,6 +97,7 @@ import UniformTypeIdentifiers
         try? fm.createDirectory(at: root.appendingPathComponent("Assets"), withIntermediateDirectories: true)
         selected = session.tracks.first?.id
         preRoll = min(2,max(0,UserDefaults.standard.integer(forKey: "countInBars")))
+        inputQuantize = UserDefaults.standard.bool(forKey: "inputQuantize")
         audio.onInputLevel = { [weak self] value in self?.inputLevel = value }
         audio.onInterruption = { [weak self] in self?.stop(); self?.status = "Audio interrupted. Tap Restart Audio when the route is ready." }
         #if os(iOS)
@@ -255,7 +259,7 @@ import UniformTypeIdentifiers
         for (note, entry) in held {
             audio.send(track: entry.0, note: soundingNotes[note] ?? note, velocity: 0)
             if let i = session.tracks.firstIndex(where: { $0.id == entry.0 }) {
-                session.tracks[i].notes.append(MIDIEvent(beat: max(takeStartBeat,entry.1), duration: max(0.03125,beat-entry.1), note: soundingNotes[note] ?? note))
+                session.tracks[i].notes.append(MIDINoteEdits.recorded(start: max(takeStartBeat,entry.1), end: beat, note: soundingNotes[note] ?? note, grid: inputQuantize ? grid : nil))
             }
         }
         held.removeAll()
