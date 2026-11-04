@@ -8,8 +8,6 @@ import CoreAudioKit
 final class VIIAudioUnit: AUAudioUnit {
     private let inputBus: AUAudioUnitBus
     private let outputBus: AUAudioUnitBus
-    private let inputs: AUAudioUnitBusArray
-    private let outputs: AUAudioUnitBusArray
     private let wetParameter: AUParameter
     private let parameters: AUParameterTree
     private let state = UnsafeMutablePointer<VIIEngine>.allocate(capacity: 1)
@@ -19,8 +17,6 @@ final class VIIAudioUnit: AUAudioUnit {
         let format = AVAudioFormat(standardFormatWithSampleRate: 48000, channels: 2)!
         inputBus = try AUAudioUnitBus(format: format)
         outputBus = try AUAudioUnitBus(format: format)
-        inputs = AUAudioUnitBusArray(audioUnit: nil, busType: .input, busses: [])
-        outputs = AUAudioUnitBusArray(audioUnit: nil, busType: .output, busses: [])
         wetParameter = AUParameterTree.createParameter(withIdentifier: "wet", name: "Synth Mix",
             address: 0, min: 0, max: 1, unit: .generic,
             unitName: nil, flags: [.flag_IsReadable, .flag_IsWritable],
