@@ -15,6 +15,21 @@ enum PluginDiscovery {
                 (includeApple || $0.manufacturer != kAudioUnitManufacturer_Apple) }
         }
     }
+    // Stable Audio Component identity shipped by the Instrument DNA AUv3.
+    // DNAi's analysis workspace is not yet a separately registered AUv3.
+    static let dnaType: OSType = 0x61756d75 // 'aumu'
+    static let dnaSubtype: OSType = 0x496e444e // 'InDN'
+    static let dnaManufacturer: OSType = 0x4462414c // 'DbAL'
+    static func isInstrumentDNA(_ ref: PluginRef) -> Bool {
+        ref.type == dnaType && ref.subtype == dnaSubtype && ref.manufacturer == dnaManufacturer
+    }
+    static func identity(_ ref: PluginRef) -> String {
+        func fourCC(_ value: UInt32) -> String {
+            let bytes = (0..<4).map { UInt8((value >> (24 - $0*8)) & 0xff) }
+            return String(bytes: bytes, encoding: .ascii) ?? String(format: "%08X", value)
+        }
+        return "\(fourCC(ref.type))/\(fourCC(ref.subtype))/\(fourCC(ref.manufacturer))"
+    }
     static func supports(_ type: OSType, effect: Bool) -> Bool {
         effect ? [kAudioUnitType_Effect, kAudioUnitType_MusicEffect].contains(type) :
             [kAudioUnitType_MusicDevice, kAudioUnitType_Generator].contains(type)
@@ -70,11 +85,27 @@ enum PluginDiscovery {
                 }
             }
             Section(header: Text(effect ? "Effects" : "Instruments / Generators")) {
+                if !effect && scanned {
+                    if let dna = snapshot.visible(effect: false, includeApple: true).first(where: PluginDiscovery.isInstrumentDNA) {
+                        Text("Instrument DNA registered: \(PluginDiscovery.identity(dna)). Select it below to instantiate.").font(.caption).foregroundColor(.secondary)
+                    } else {
+                        Text("Instrument DNA not registered (aumu/InDN/DbAL). Install and launch its containing Mac app, then refresh. DNAi Mapping currently runs in the standalone app, not as a separate AUv3.").font(.caption).foregroundColor(.secondary)
+                    }
+                }
                 if snapshot.visible(effect: effect, includeApple: includeApple).isEmpty {
                     Text(scanned ? "No registered audio units in this category are visible to DBAL. This is a discovery result, not a compatibility test. Use Refresh after returning from another app." : "Checking registered Audio Units…").font(.callout)
                 }
                 ForEach(snapshot.visible(effect: effect, includeApple: includeApple)) { ref in
-                    Button(ref.name) { picked(ref) }
+                    Button {
+                        picked(ref)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(ref.name)
+                            if PluginDiscovery.isInstrumentDNA(ref) {
+                                Text("DBAL Instrument DNA • \(PluginDiscovery.identity(ref))").font(.caption2).foregroundColor(.secondary)
+                            }
+                        }
+                    }
                 }
             }
             Section {
